@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- 파이어베이스 v8 (안정적인 버전) -->
+    <!-- 파이어베이스 SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- 카카오맵 API (https 명시 및 서비스 라이브러리 포함) -->
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=a3af4e8999293e0dfe43a0bd1831c944&libraries=services"></script>
+    <!-- ⚠️ 카카오맵 SDK (주신 f8d8690786ee5696eb5608d1f535146a 키 적용) -->
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f8d8690786ee5696eb5608d1f535146a&libraries=services"></script>
 
     <style>
         :root { --main-mint: #4FB894; --main-orange: #F0854B; --text-brown: #5B4636; }
@@ -24,33 +24,42 @@
             position: relative; overflow: hidden; display: flex; flex-direction: column; 
         }
         
-        /* 모든 페이지는 기본적으로 숨김, active만 보임 */
-        .page { display: none; width: 100%; height: 100%; flex-direction: column; padding: 24px; overflow-y: auto; }
+        /* 페이지 숨김/표시 완벽 제어 */
+        .page { display: none !important; width: 100%; height: 100%; flex-direction: column; padding: 24px; overflow-y: auto; }
         .page.active { display: flex !important; }
         
-        /* 빈 화면 방지: 홈 페이지는 기본적으로 보이게 설정 */
-        #page-home { display: flex; }
-
-        .btn-primary { background: var(--main-mint); color: white; border-radius: 22px; padding: 18px; text-align: center; font-family: 'Jua'; font-size: 18px; cursor: pointer; border: none; width: 100%; margin-top: auto; flex-shrink: 0; box-shadow: 0 8px 20px rgba(79, 184, 148, 0.2); }
+        /* 버튼 스타일 */
+        .btn-primary { background: var(--main-mint); color: white; border-radius: 22px; padding: 18px; text-align: center; font-family: 'Jua'; font-size: 18px; cursor: pointer; border: none; width: 100%; margin-top: auto; flex-shrink: 0; transition: 0.2s; box-shadow: 0 8px 20px rgba(79, 184, 148, 0.2); }
         .btn-primary:active { transform: scale(0.97); }
         
         .selectable { cursor: pointer; border: 2px solid #F3EADA; border-radius: 24px; transition: 0.2s; background: white; }
         .selected { border-color: var(--main-mint) !important; background: #F0F9F6 !important; }
         
+        /* 2번 요청: 날짜 숫자 정중앙 보정 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .date-cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: 0.2s; line-height: 1; }
+        .date-cell { 
+            aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; 
+            font-size: 13px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: 0.2s; 
+            line-height: 1; padding: 0; margin: 0;
+        }
         .date-active { background: var(--main-mint) !important; color: white !important; box-shadow: 0 4px 10px rgba(79, 184, 148, 0.3); }
 
-        .time-chip { padding: 10px 14px; border-radius: 14px; border: 2px solid #F3EADA; font-size: 11px; font-weight: 700; cursor: pointer; background: white; text-align: center; }
+        /* 3번 요청: 시간 칩 UI (X 버튼 포함) */
+        .time-chip { padding: 10px 14px; border-radius: 14px; border: 2px solid #F3EADA; font-size: 11px; font-weight: 700; cursor: pointer; background: white; transition: 0.2s; text-align: center; }
         .time-active { background: var(--main-orange) !important; color: white !important; border-color: var(--main-orange) !important; }
-        .summary-chip { background: var(--main-mint); color: white; padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        .summary-chip { 
+            background: var(--main-mint); color: white; padding: 6px 12px; border-radius: 12px; 
+            font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 2px 6px rgba(79, 184, 148, 0.2);
+        }
 
-        #map { width: 100%; height: 240px; border-radius: 30px; border: 2px solid #F3EADA; flex-shrink: 0; margin-bottom: 20px; background: #f8f8f8; }
-        .place-card { padding: 16px; border: 2px solid #F3EADA; border-radius: 26px; background: white; cursor: pointer; margin-bottom: 12px; display: flex; gap: 15px; align-items: center; }
+        /* 4번 요청: 지도 & 맛집 카드 보정 */
+        #map { width: 100%; height: 260px; border-radius: 30px; border: 2px solid #F3EADA; flex-shrink: 0; margin-bottom: 20px; background: #eee; position: relative; }
+        .place-card { padding: 16px; border: 2px solid #F3EADA; border-radius: 26px; background: white; cursor: pointer; margin-bottom: 12px; display: flex; gap: 15px; align-items: center; transition: 0.2s; }
         .place-card.selected { border-color: var(--main-mint); background: #F0F9F6; }
         .place-thumb { width: 60px; height: 60px; background: #FBF6EC; border-radius: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; }
 
-        .slot-card { background: white; border: 2px solid #F3EADA; padding: 14px 18px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+        .slot-card { background: white; border: 2px solid #F3EADA; padding: 14px 18px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; transition: 0.2s; }
         
         ::-webkit-scrollbar { display: none; }
     </style>
@@ -59,16 +68,16 @@
 
 <div class="app-container">
     <!-- 화면 1: 홈 -->
-    <div id="page-home" class="page active items-center justify-center text-center">
+    <div id="page-home" class="page items-center justify-center text-center">
         <div class="text-8xl mb-8">🐱</div>
         <h1 class="jua text-4xl mb-4 text-[#5B4636]">모여라! 우리들</h1>
-        <p class="text-sm text-gray-400 mb-12 leading-relaxed">가장 설레는 방법으로<br>약속을 정해봐요!</p>
+        <p class="text-sm text-gray-400 mb-12 leading-relaxed">우리 오늘 어디서 모일까?<br>가장 설레는 방법으로 정해봐요!</p>
         <button class="btn-primary" onclick="goToPage('profile-setup')">➕ 약속 방 만들기</button>
     </div>
 
     <!-- 화면 2: 프로필 설정 -->
     <div id="page-profile-setup" class="page items-center justify-center text-center">
-        <h2 class="jua text-2xl mb-10">내 프로필 만들기 ✨</h2>
+        <h2 class="jua text-2xl mb-10 text-[#5B4636]">내 프로필 만들기 ✨</h2>
         <div id="profile-preview" class="w-24 h-24 text-6xl mb-8 rounded-full flex items-center justify-center mx-auto shadow-xl" style="background-color: #FFE0C7;">🐱</div>
         <input type="text" id="user-name" maxlength="8" placeholder="이름을 입력해주세요" class="w-full p-5 border-2 border-[#F3EADA] rounded-3xl mb-4 text-center focus:outline-none focus:border-[#3FAE85] font-bold text-lg">
         <button class="bg-gray-100 p-3 px-6 rounded-2xl text-xs font-bold text-gray-400 mb-12" onclick="randomizeProfile()">🎲 랜덤 아이콘 & 컬러</button>
@@ -77,7 +86,7 @@
 
     <!-- 화면 3: 날짜 및 시간 선택 -->
     <div id="page-datetime" class="page">
-        <h2 class="jua text-2xl mb-6">언제가 좋아? 🗓️</h2>
+        <h2 class="jua text-2xl mb-6 text-[#5B4636]">언제가 좋아? 🗓️</h2>
         <div class="bg-white border-2 border-[#F3EADA] rounded-[36px] p-6 mb-8 text-center shadow-sm">
             <div class="flex justify-between items-center mb-6 px-2">
                 <button onclick="changeMonth(-1)" class="text-2xl font-bold text-gray-300">‹</button>
@@ -98,15 +107,16 @@
                 <div class="selectable p-4 text-center" id="btn-dinner" onclick="selectTimeCategory('저녁')">🌙<br><span class="jua text-xs">저녁</span></div>
             </div>
             <div id="detail-time-area" class="grid grid-cols-4 gap-2 mb-4"></div>
-            <div id="selected-summary" class="flex flex-wrap gap-2 mt-2 border-t pt-5 border-dashed border-gray-100"></div>
+            <!-- 선택된 시간 칩 (3번 요청 해결) -->
+            <div id="selected-summary" class="flex flex-wrap gap-2 mt-2 border-t pt-6 border-dashed border-gray-100"></div>
         </div>
         <button class="btn-primary" onclick="submitVotes()">의견 제출하고 대기하기 🗳️</button>
     </div>
 
     <!-- 화면 4: 대기실 -->
     <div id="page-waiting" class="page">
-        <h2 class="jua text-2xl mb-2 text-center">친구들을 기다려요 💬</h2>
-        <p class="text-center text-[11px] text-gray-400 mb-8 font-bold">참여 멤버 및 투표 현황</p>
+        <h2 class="jua text-2xl mb-2 text-center text-[#5B4636]">친구들을 기다려요 💬</h2>
+        <p class="text-center text-[11px] text-gray-400 mb-8 font-bold">실시간 투표 결과</p>
         <div class="bg-white border-2 border-[#F3EADA] rounded-[36px] p-6 mb-8 shadow-sm">
             <div id="member-list" class="grid grid-cols-3 gap-6"></div>
         </div>
@@ -131,38 +141,39 @@
             <p class="text-[10px] font-bold text-[#3FAE85] uppercase tracking-widest mb-1">Confirmed Appointment</p>
             <p class="jua text-lg text-[#166534]" id="display-final-time">-</p>
         </div>
-        <h2 class="jua text-2xl mb-6">뭐 먹고 싶어? 🍕</h2>
+        <h2 class="jua text-2xl mb-6 text-[#5B4636]">뭐 먹고 싶어? 🍕</h2>
         <div class="grid grid-cols-2 gap-4 mb-10" id="menu-list">
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '한식')">🍚 한식</div>
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '일식')">🍣 일식</div>
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '양식')">🍝 양식</div>
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '카페')">🍰 카페</div>
         </div>
-        <input type="text" id="search-location" placeholder="어디 근처에서 볼까? (예: 강남역)" class="w-full p-5 border-2 border-[#F3EADA] rounded-3xl mb-8 text-center focus:outline-none focus:border-[#3FAE85] font-bold text-lg">
+        <input type="text" id="search-location" placeholder="어디 근처에서 볼까? (예: 강남역)" class="w-full p-5 border-2 border-[#F3EADA] rounded-3xl mb-8 text-center focus:outline-none focus:border-[#3FAE85] font-bold text-lg shadow-inner">
         <button class="btn-primary" onclick="searchPlaces()">맛집 리스트 불러오기 ✨</button>
     </div>
 
-    <!-- 화면 6: 장소 투표 -->
+    <!-- 화면 6: 장소 투표 (지도 4번 요청 해결) -->
     <div id="page-vote" class="page">
-        <h2 class="jua text-2xl mb-4">장소 정하기! 📍</h2>
-        <div id="map"></div>
-        <div id="place-list" class="flex-1 overflow-y-auto pr-1"></div>
+        <h2 class="jua text-2xl mb-4 text-[#5B4636]">장소 정하기! 📍</h2>
+        <div id="map"></div> <!-- 지도가 무조건 뜰 곳 -->
+        <div id="place-list" class="flex-1 overflow-y-auto pr-1">
+             <div class="text-center py-10 text-gray-300">잠시만 기다려주세요...</div>
+        </div>
         <button class="btn-primary" onclick="finishVote()">최종 투표 마감! 🎫</button>
     </div>
 
-    <!-- 화면 7: 티켓 -->
-    <div id="page-ticket" class="page items-center justify-center">
-        <div class="bg-white rounded-[45px] shadow-2xl w-full p-10 text-center border-2 border-[#F3EADA]">
+    <!-- 화면 7: 결과 -->
+    <div id="page-ticket" class="page items-center justify-center text-center">
+        <div class="bg-white rounded-[45px] shadow-2xl w-full p-10 border-2 border-[#F3EADA]">
             <h2 class="jua text-4xl text-[#3FAE85] mb-8">모임 티켓 🎫</h2>
             <div id="ticket-info" class="space-y-6 jua"></div>
-            <div class="mt-8 pt-8 border-t-2 border-dashed border-gray-100 opacity-20 font-mono text-[9px]">#MOYEORA-MU-SUCCESS</div>
         </div>
-        <button class="btn-primary mt-12" onclick="location.href='/'">처음으로</button>
+        <button class="btn-primary mt-12" onclick="location.href='/'">새 약속 만들기</button>
     </div>
 </div>
 
 <script>
-    // 1. 파이어베이스 초기 세팅
+    // 1. 파이어베이스 및 설정
     const firebaseConfig = {
         apiKey: "AIzaSyBqrEr1J2isB6NpoK_ONxOgmyl_cvNAnVs",
         authDomain: "moyeora-75ccf.firebaseapp.com",
@@ -173,10 +184,7 @@
         measurementId: "G-ZCEJ9CPWQV"
     };
 
-    try {
-        firebase.initializeApp(firebaseConfig);
-    } catch(e) { console.error("Firebase Init Error", e); }
-    
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     let myRoomId = new URLSearchParams(window.location.search).get('room');
@@ -190,15 +198,14 @@
     };
     let mySelection = { dates: [], times: [], menu: "", place: "", address: "" };
 
+    // [중요 1번 요청 보정] 페이지 이동 로직
     function goToPage(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        const target = document.getElementById('page-' + id);
-        if(target) {
-            target.classList.add('active');
-        } else {
-            console.error("Page not found:", id);
-        }
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(p => p.classList.remove('active'));
         
+        const target = document.getElementById('page-' + id);
+        if(target) target.classList.add('active');
+
         if(id === 'datetime') renderCalendar();
         if(id === 'profile-setup') {
             document.getElementById('user-name').value = myInfo.name;
@@ -230,30 +237,27 @@
         myInfo.name = nameInput;
         localStorage.setItem('moyeora_name', nameInput);
 
-        try {
-            if (!myRoomId) {
-                myRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                await db.collection("rooms").doc(myRoomId).set({ 
-                    status: 'voting', 
-                    participants: [{...myInfo, votes: {dates: [], times: []}}],
-                    adminName: myInfo.name,
-                    confirmedSlot: null
+        if (!myRoomId) {
+            myRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            await db.collection("rooms").doc(myRoomId).set({ 
+                status: 'voting', 
+                participants: [{...myInfo, votes: {dates: [], times: []}}],
+                adminName: myInfo.name,
+                confirmedSlot: null
+            });
+            window.location.href = window.location.origin + window.location.pathname + "?room=" + myRoomId;
+        } else {
+            const doc = await db.collection("rooms").doc(myRoomId).get();
+            const data = doc.data();
+            const exists = data.participants.find(p => p.name === myInfo.name);
+            if(!exists) {
+                await db.collection("rooms").doc(myRoomId).update({ 
+                    participants: firebase.firestore.FieldValue.arrayUnion({...myInfo, votes: {dates: [], times: []}}) 
                 });
-                window.location.href = window.location.origin + window.location.pathname + "?room=" + myRoomId;
-            } else {
-                const doc = await db.collection("rooms").doc(myRoomId).get();
-                if(!doc.exists) return alert("방이 존재하지 않습니다.");
-                const data = doc.data();
-                const exists = data.participants.find(p => p.name === myInfo.name);
-                if(!exists) {
-                    await db.collection("rooms").doc(myRoomId).update({ 
-                        participants: firebase.firestore.FieldValue.arrayUnion({...myInfo, votes: {dates: [], times: []}}) 
-                    });
-                }
-                startMonitoring();
-                goToPage('datetime');
             }
-        } catch(e) { alert("입장 중 오류가 발생했습니다."); console.error(e); }
+            startMonitoring();
+            goToPage('datetime');
+        }
     }
 
     function startMonitoring() {
@@ -287,7 +291,7 @@
                 `;
                 goToPage('ticket');
             }
-        }, (error) => console.error("Snapshot error:", error));
+        });
     }
 
     function calculateVoteRanking(participants) {
@@ -313,10 +317,11 @@
     }
 
     async function confirmSlot(slotStr) {
-        if(!confirm(`'${slotStr}' 로 시간을 확정할까요?`)) return;
+        if(!confirm(`'${slotStr}' 로 확정할까요?`)) return;
         await db.collection("rooms").doc(myRoomId).update({ status: 'place_voting', confirmedSlot: slotStr });
     }
 
+    // [중요 2번 요청 보정] 캘린더 정중앙 정렬
     function renderCalendar() {
         const grid = document.getElementById('calendar-grid');
         document.getElementById('calendar-month').innerText = `${viewYear}년 ${viewMonth + 1}월`;
@@ -339,11 +344,11 @@
     }
     function changeMonth(s) { viewMonth += s; if(viewMonth<0){viewMonth=11;viewYear--;} if(viewMonth>11){viewMonth=0;viewYear++;} renderCalendar(); }
     
+    // [중요 3번 요청 보정] 시간 선택 및 X 버튼 칩
     function selectTimeCategory(cat) {
         document.querySelectorAll('#page-datetime .selectable').forEach(b => b.classList.remove('selected'));
         const btnId = cat === '점심' ? 'btn-lunch' : (cat === '오후' ? 'btn-after' : 'btn-dinner');
-        const btn = document.getElementById(btnId);
-        if(btn) btn.classList.add('selected');
+        document.getElementById(btnId).classList.add('selected');
         
         const area = document.getElementById('detail-time-area'); area.innerHTML = "";
         const hS = cat === '점심' ? 11 : (cat === '오후' ? 14 : 18);
@@ -378,33 +383,29 @@
     window.removeTime = (t) => {
         mySelection.times = mySelection.times.filter(v => v !== t);
         updateTimeSummary();
-        const activeCatBtn = document.querySelector('#page-datetime .selectable.selected');
-        if(activeCatBtn) {
-            const cat = activeCatBtn.id === 'btn-lunch' ? '점심' : (activeCatBtn.id === 'btn-after' ? '오후' : '저녁');
-            selectTimeCategory(cat);
-        }
-    };
+        const activeCat = document.querySelector('#page-datetime .selectable.selected')?.id;
+        if(activeCat) selectTimeCategory(activeCat === 'btn-lunch' ? '점심' : (activeCat === 'btn-after' ? '오후' : '저녁'));
+    }
 
     async function submitVotes() {
         if(!mySelection.dates.length || !mySelection.times.length) return alert("날짜와 시간을 선택하세요!");
-        try {
-            const doc = await db.collection("rooms").doc(myRoomId).get();
-            let parts = doc.data().participants;
-            parts = parts.map(p => (p.name === myInfo.name) ? { ...p, votes: { dates: mySelection.dates, times: mySelection.times } } : p);
-            await db.collection("rooms").doc(myRoomId).update({ participants: parts });
-            goToPage('waiting');
-        } catch(e) { console.error(e); }
+        const doc = await db.collection("rooms").doc(myRoomId).get();
+        let parts = doc.data().participants;
+        parts = parts.map(p => (p.name === myInfo.name) ? { ...p, votes: { dates: mySelection.dates, times: mySelection.times } } : p);
+        await db.collection("rooms").doc(myRoomId).update({ participants: parts });
+        goToPage('waiting');
     }
 
+    // [중요 4번 요청 보정] 카카오맵 검색 및 강제 렌더링
     function selectMenu(el, m) { document.querySelectorAll('#menu-list .selectable').forEach(s => s.classList.remove('selected')); el.classList.add('selected'); mySelection.menu = m; }
     
     let ps = new kakao.maps.services.Places();
     function searchPlaces() {
-        const locInput = document.getElementById('search-location');
-        const loc = locInput ? locInput.value.trim() : "";
-        if(!mySelection.menu || !loc) return alert("메뉴와 지역을 모두 입력하세요!");
+        const loc = document.getElementById('search-location').value.trim();
+        if(!mySelection.menu || !loc) return alert("메뉴와 지역을 입력하세요!");
         goToPage('vote');
         
+        // 지도가 뜰 공간을 위해 아주 잠시 대기 후 실행 (중요)
         setTimeout(() => {
             ps.keywordSearch(`${loc} ${mySelection.menu}`, (data, status) => {
                 if (status === kakao.maps.services.Status.OK) displayPlaces(data);
@@ -416,21 +417,26 @@
     function displayPlaces(places) {
         const listEl = document.getElementById('place-list'); listEl.innerHTML = "";
         const mapContainer = document.getElementById('map');
-        const map = new kakao.maps.Map(mapContainer, { center: new kakao.maps.LatLng(places[0].y, places[0].x), level: 3 });
-        const marker = new kakao.maps.Marker({ position: map.getCenter() }); marker.setMap(map);
         
-        // 지도 리아웃 강제 갱신
-        setTimeout(() => { map.relayout(); map.setCenter(new kakao.maps.LatLng(places[0].y, places[0].x)); }, 100);
+        // 지도 초기화
+        const map = new kakao.maps.Map(mapContainer, { center: new kakao.maps.LatLng(places[0].y, places[0].x), level: 3 });
+        const marker = new kakao.maps.Marker({ position: map.getCenter() }); 
+        marker.setMap(map);
+        
+        // 지도가 0x0으로 그려지는 것을 방지하기 위해 강제 레이아웃 재정렬
+        setTimeout(() => map.relayout(), 100);
 
         places.forEach((p) => {
             let emoji = p.category_name.includes("카페") ? "☕" : p.category_name.includes("한식") ? "🍚" : p.category_name.includes("일식") ? "🍣" : "🍝";
             const card = document.createElement('div');
             card.className = "place-card";
-            card.innerHTML = `<div class="place-thumb">${emoji}</div><div class="flex-1"><div class="font-bold text-[13px] mb-1 text-[#5B4636]">${p.place_name}</div><div class="text-[10px] text-gray-400 mb-1 leading-tight">${p.address_name}</div><a href="https://place.map.kakao.com/${p.id}" target="_blank" class="text-[9px] text-blue-500 font-bold">운영시간 🔗</a></div>`;
+            card.innerHTML = `<div class="place-thumb">${emoji}</div><div class="flex-1"><div class="font-bold text-[13px] mb-1 text-[#5B4636]">${p.place_name}</div><div class="text-[10px] text-gray-400 mb-1 leading-tight">${p.address_name}</div><a href="https://place.map.kakao.com/${p.id}" target="_blank" class="text-[9px] text-blue-500 font-bold border-b border-blue-100">운영시간 🔗</a></div>`;
             card.onclick = () => {
                 document.querySelectorAll('.place-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected');
                 mySelection.place = p.place_name; mySelection.address = p.address_name;
-                const pos = new kakao.maps.LatLng(p.y, p.x); map.panTo(pos); marker.setPosition(pos);
+                const pos = new kakao.maps.LatLng(p.y, p.x);
+                map.panTo(pos); 
+                marker.setPosition(pos);
             };
             listEl.appendChild(card);
         });
