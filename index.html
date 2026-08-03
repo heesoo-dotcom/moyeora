@@ -4,101 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>모여라! 우리들 - 스마트 약속 조율</title>
+    
+    <!-- 스타일 및 외부 폰트 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- 파이어베이스 SDK -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- 외부 SDK (Firebase, Kakao) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- ⚠️ 카카오맵 SDK (주신 f8d8690786ee5696eb5608d1f535146a 키 적용) -->
+    <!-- ⚠️ 카카오맵 SDK (주신 JS Key 적용) -->
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f8d8690786ee5696eb5608d1f535146a&libraries=services"></script>
-
-    <style>
-        :root { --main-mint: #4FB894; --main-orange: #F0854B; --text-brown: #5B4636; }
-        body { margin: 0; background: #FBE9D0; font-family: 'Gowun Dodum', sans-serif; color: var(--text-brown); display: flex; justify-content: center; min-height: 100vh; }
-        .jua { font-family: 'Jua', sans-serif; }
-        
-        .app-container { 
-            width: 100%; max-width: 412px; height: 840px; background: #FFFDF8; 
-            border-radius: 40px; box-shadow: 0 30px 60px -12px rgba(91, 70, 54, 0.2); 
-            position: relative; overflow: hidden; display: flex; flex-direction: column; 
-        }
-        
-        /* 페이지 숨김/표시 완벽 제어 */
-        .page { display: none !important; width: 100%; height: 100%; flex-direction: column; padding: 24px; overflow-y: auto; }
-        .page.active { display: flex !important; }
-        
-        /* 버튼 스타일 */
-        .btn-primary { background: var(--main-mint); color: white; border-radius: 22px; padding: 18px; text-align: center; font-family: 'Jua'; font-size: 18px; cursor: pointer; border: none; width: 100%; margin-top: auto; flex-shrink: 0; transition: 0.2s; box-shadow: 0 8px 20px rgba(79, 184, 148, 0.2); }
-        .btn-primary:active { transform: scale(0.97); }
-        
-        .selectable { cursor: pointer; border: 2px solid #F3EADA; border-radius: 24px; transition: 0.2s; background: white; }
-        .selected { border-color: var(--main-mint) !important; background: #F0F9F6 !important; }
-        
-        /* 2번 요청: 날짜 숫자 정중앙 보정 */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .date-cell { 
-            aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; 
-            font-size: 13px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: 0.2s; 
-            line-height: 1; padding: 0; margin: 0;
-        }
-        .date-active { background: var(--main-mint) !important; color: white !important; box-shadow: 0 4px 10px rgba(79, 184, 148, 0.3); }
-
-        /* 3번 요청: 시간 칩 UI (X 버튼 포함) */
-        .time-chip { padding: 10px 14px; border-radius: 14px; border: 2px solid #F3EADA; font-size: 11px; font-weight: 700; cursor: pointer; background: white; transition: 0.2s; text-align: center; }
-        .time-active { background: var(--main-orange) !important; color: white !important; border-color: var(--main-orange) !important; }
-        .summary-chip { 
-            background: var(--main-mint); color: white; padding: 6px 12px; border-radius: 12px; 
-            font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 8px;
-            box-shadow: 0 2px 6px rgba(79, 184, 148, 0.2);
-        }
-
-        /* 4번 요청: 지도 & 맛집 카드 보정 */
-        #map { width: 100%; height: 260px; border-radius: 30px; border: 2px solid #F3EADA; flex-shrink: 0; margin-bottom: 20px; background: #eee; position: relative; }
-        .place-card { padding: 16px; border: 2px solid #F3EADA; border-radius: 26px; background: white; cursor: pointer; margin-bottom: 12px; display: flex; gap: 15px; align-items: center; transition: 0.2s; }
-        .place-card.selected { border-color: var(--main-mint); background: #F0F9F6; }
-        .place-thumb { width: 60px; height: 60px; background: #FBF6EC; border-radius: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; }
-
-        .slot-card { background: white; border: 2px solid #F3EADA; padding: 14px 18px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; transition: 0.2s; }
-        
-        ::-webkit-scrollbar { display: none; }
-    </style>
 </head>
 <body>
 
 <div class="app-container">
     <!-- 화면 1: 홈 -->
-    <div id="page-home" class="page items-center justify-center text-center">
-        <div class="text-8xl mb-8">🐱</div>
-        <h1 class="jua text-4xl mb-4 text-[#5B4636]">모여라! 우리들</h1>
-        <p class="text-sm text-gray-400 mb-12 leading-relaxed">우리 오늘 어디서 모일까?<br>가장 설레는 방법으로 정해봐요!</p>
-        <button class="btn-primary" onclick="goToPage('profile-setup')">➕ 약속 방 만들기</button>
+    <div id="page-home" class="page active">
+        <div class="flex flex-col items-center justify-center h-full text-center">
+            <div class="text-8xl mb-8">🐱</div>
+            <h1 class="jua text-4xl mb-4 text-[#5B4636]">모여라! 우리들</h1>
+            <p class="text-sm text-gray-400 mb-12">우리 오늘 어디서 모일까?<br>가장 설레는 방법으로 정해봐요!</p>
+            <button class="btn-primary" onclick="goToPage('profile-setup')">➕ 약속 방 만들기</button>
+        </div>
     </div>
 
     <!-- 화면 2: 프로필 설정 -->
-    <div id="page-profile-setup" class="page items-center justify-center text-center">
-        <h2 class="jua text-2xl mb-10 text-[#5B4636]">내 프로필 만들기 ✨</h2>
-        <div id="profile-preview" class="w-24 h-24 text-6xl mb-8 rounded-full flex items-center justify-center mx-auto shadow-xl" style="background-color: #FFE0C7;">🐱</div>
-        <input type="text" id="user-name" maxlength="8" placeholder="이름을 입력해주세요" class="w-full p-5 border-2 border-[#F3EADA] rounded-3xl mb-4 text-center focus:outline-none focus:border-[#3FAE85] font-bold text-lg">
-        <button class="bg-gray-100 p-3 px-6 rounded-2xl text-xs font-bold text-gray-400 mb-12" onclick="randomizeProfile()">🎲 랜덤 아이콘 & 컬러</button>
-        <button class="btn-primary" onclick="handleEntry()">입장하기 🐾</button>
+    <div id="page-profile-setup" class="page">
+        <div class="flex flex-col items-center justify-center h-full text-center">
+            <h2 class="jua text-2xl mb-10">내 프로필 만들기 ✨</h2>
+            <div id="profile-preview" class="w-24 h-24 text-6xl mb-8 rounded-full flex items-center justify-center mx-auto shadow-xl" style="background-color: #FFE0C7;">🐱</div>
+            <input type="text" id="user-name" maxlength="8" placeholder="이름을 입력해주세요" class="w-full p-5 border-2 border-[#F3EADA] rounded-3xl mb-4 text-center focus:outline-none focus:border-[#3FAE85] font-bold text-lg">
+            <button class="bg-gray-100 p-3 px-6 rounded-2xl text-xs font-bold text-gray-400 mb-12" onclick="randomizeProfile()">🎲 랜덤 아이콘 & 컬러</button>
+            <button class="btn-primary" onclick="handleEntry()">입장하기 🐾</button>
+        </div>
     </div>
 
-    <!-- 화면 3: 날짜 및 시간 선택 -->
+    <!-- 화면 3: 날짜/시간 선택 -->
     <div id="page-datetime" class="page">
         <h2 class="jua text-2xl mb-6 text-[#5B4636]">언제가 좋아? 🗓️</h2>
         <div class="bg-white border-2 border-[#F3EADA] rounded-[36px] p-6 mb-8 text-center shadow-sm">
             <div class="flex justify-between items-center mb-6 px-2">
                 <button onclick="changeMonth(-1)" class="text-2xl font-bold text-gray-300">‹</button>
-                <div id="calendar-month" class="jua text-lg text-[#5B4636]">2024년 10월</div>
+                <div id="calendar-month" class="jua text-lg">2024년 10월</div>
                 <button onclick="changeMonth(1)" class="text-2xl font-bold text-gray-300">›</button>
             </div>
-            <div class="calendar-grid text-[10px] font-bold text-gray-300 mb-4 uppercase tracking-widest">
+            <div class="calendar-grid text-[10px] font-bold text-gray-300 mb-4 uppercase">
                 <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
             </div>
             <div class="calendar-grid" id="calendar-grid"></div>
         </div>
-
         <div class="mb-8">
             <p class="text-[11px] font-bold text-[#B3A18F] mb-4 uppercase tracking-widest">시간대 선택 (중복 가능)</p>
             <div class="grid grid-cols-3 gap-3 mb-6">
@@ -107,41 +62,37 @@
                 <div class="selectable p-4 text-center" id="btn-dinner" onclick="selectTimeCategory('저녁')">🌙<br><span class="jua text-xs">저녁</span></div>
             </div>
             <div id="detail-time-area" class="grid grid-cols-4 gap-2 mb-4"></div>
-            <!-- 선택된 시간 칩 (3번 요청 해결) -->
             <div id="selected-summary" class="flex flex-wrap gap-2 mt-2 border-t pt-6 border-dashed border-gray-100"></div>
         </div>
         <button class="btn-primary" onclick="submitVotes()">의견 제출하고 대기하기 🗳️</button>
     </div>
 
     <!-- 화면 4: 대기실 -->
-    <div id="page-waiting" class="page">
-        <h2 class="jua text-2xl mb-2 text-center text-[#5B4636]">친구들을 기다려요 💬</h2>
-        <p class="text-center text-[11px] text-gray-400 mb-8 font-bold">실시간 투표 결과</p>
+    <div id="page-waiting" class="page text-center">
+        <h2 class="jua text-2xl mb-2 text-[#5B4636]">친구들을 기다려요 💬</h2>
+        <p class="text-[11px] text-gray-400 mb-8 font-bold">실시간 투표 결과</p>
         <div class="bg-white border-2 border-[#F3EADA] rounded-[36px] p-6 mb-8 shadow-sm">
             <div id="member-list" class="grid grid-cols-3 gap-6"></div>
         </div>
-
         <div id="admin-panel" class="hidden">
-            <div class="bg-[#F0FDF4] border-2 border-[#BBF7D0] rounded-[32px] p-6 mb-6">
-                <p class="jua text-[#166534] mb-4 text-center text-sm">👑 방장님! 일시를 하나 확정해주세요</p>
+            <div class="bg-[#F0FDF4] border-2 border-[#BBF7D0] rounded-[32px] p-6 mb-6 text-left">
+                <p class="jua text-[#166534] mb-4 text-center text-sm">👑 방장님! 일시를 확정해주세요</p>
                 <div id="admin-ranking-list" class="max-h-52 overflow-y-auto pr-1"></div>
             </div>
         </div>
-
         <div id="guest-panel" class="text-center p-10 bg-gray-50 rounded-[36px] mb-6 border-2 border-dashed border-gray-100">
-            <p class="text-xs text-gray-400 leading-relaxed">방장님이 약속 일시를<br>확정할 때까지 기다려주세요! 🐾</p>
+            <p class="text-xs text-gray-400">방장이 약속 일시를 확정할 때까지 기다려주세요!</p>
         </div>
-
-        <button class="bg-[#FFE39A] p-5 rounded-3xl text-center cursor-pointer mb-2 w-full font-bold text-[#8A6A50] shadow-sm active:scale-95 transition-all" onclick="copyLink()">🔗 초대 링크 복사하기</button>
+        <button class="bg-[#FFE39A] p-5 rounded-3xl text-center w-full font-bold text-[#8A6A50] shadow-sm active:scale-95 transition-all" onclick="copyLink()">🔗 초대 링크 복사하기</button>
     </div>
 
-    <!-- 화면 5: 메뉴 및 장소 검색 -->
+    <!-- 화면 5: 메뉴 선택 -->
     <div id="page-menu" class="page">
-        <div class="bg-[#F0FDF4] p-6 rounded-[32px] mb-8 text-center border-2 border-[#BBF7D0] shadow-sm">
-            <p class="text-[10px] font-bold text-[#3FAE85] uppercase tracking-widest mb-1">Confirmed Appointment</p>
+        <div class="bg-[#F0FDF4] p-6 rounded-[32px] mb-8 text-center border-2 border-[#BBF7D0]">
+            <p class="text-[10px] font-bold text-[#3FAE85] uppercase tracking-widest mb-1">Confirmed Time</p>
             <p class="jua text-lg text-[#166534]" id="display-final-time">-</p>
         </div>
-        <h2 class="jua text-2xl mb-6 text-[#5B4636]">뭐 먹고 싶어? 🍕</h2>
+        <h2 class="jua text-2xl mb-6">뭐 먹고 싶어? 🍕</h2>
         <div class="grid grid-cols-2 gap-4 mb-10" id="menu-list">
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '한식')">🍚 한식</div>
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '일식')">🍣 일식</div>
@@ -152,17 +103,15 @@
         <button class="btn-primary" onclick="searchPlaces()">맛집 리스트 불러오기 ✨</button>
     </div>
 
-    <!-- 화면 6: 장소 투표 (지도 4번 요청 해결) -->
+    <!-- 화면 6: 장소 투표 -->
     <div id="page-vote" class="page">
         <h2 class="jua text-2xl mb-4 text-[#5B4636]">장소 정하기! 📍</h2>
-        <div id="map"></div> <!-- 지도가 무조건 뜰 곳 -->
-        <div id="place-list" class="flex-1 overflow-y-auto pr-1">
-             <div class="text-center py-10 text-gray-300">잠시만 기다려주세요...</div>
-        </div>
+        <div id="map"></div>
+        <div id="place-list" class="flex-1 overflow-y-auto pr-1"></div>
         <button class="btn-primary" onclick="finishVote()">최종 투표 마감! 🎫</button>
     </div>
 
-    <!-- 화면 7: 결과 -->
+    <!-- 화면 7: 결과 티켓 -->
     <div id="page-ticket" class="page items-center justify-center text-center">
         <div class="bg-white rounded-[45px] shadow-2xl w-full p-10 border-2 border-[#F3EADA]">
             <h2 class="jua text-4xl text-[#3FAE85] mb-8">모임 티켓 🎫</h2>
@@ -172,292 +121,7 @@
     </div>
 </div>
 
-<script>
-    // 1. 파이어베이스 및 설정
-    const firebaseConfig = {
-        apiKey: "AIzaSyBqrEr1J2isB6NpoK_ONxOgmyl_cvNAnVs",
-        authDomain: "moyeora-75ccf.firebaseapp.com",
-        projectId: "moyeora-75ccf",
-        storageBucket: "moyeora-75ccf.firebasestorage.app",
-        messagingSenderId: "740093064639",
-        appId: "1:740093064639:web:bd5326613a98aa2ea9dd0a",
-        measurementId: "G-ZCEJ9CPWQV"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    let myRoomId = new URLSearchParams(window.location.search).get('room');
-    let viewYear = new Date().getFullYear();
-    let viewMonth = new Date().getMonth();
-    
-    let myInfo = { 
-        name: localStorage.getItem('moyeora_name') || "", 
-        emoji: localStorage.getItem('moyeora_emoji') || "🐱", 
-        color: localStorage.getItem('moyeora_color') || "#FFE0C7" 
-    };
-    let mySelection = { dates: [], times: [], menu: "", place: "", address: "" };
-
-    // [중요 1번 요청 보정] 페이지 이동 로직
-    function goToPage(id) {
-        const pages = document.querySelectorAll('.page');
-        pages.forEach(p => p.classList.remove('active'));
-        
-        const target = document.getElementById('page-' + id);
-        if(target) target.classList.add('active');
-
-        if(id === 'datetime') renderCalendar();
-        if(id === 'profile-setup') {
-            document.getElementById('user-name').value = myInfo.name;
-            updateProfilePreview();
-        }
-    }
-
-    function randomizeProfile() {
-        const emojis = ["🐱", "🐶", "🐰", "🦊", "🐻", "🐼", "🐹", "🦁", "🐧", "🐷", "🐨"];
-        const colors = ["#FFE0C7", "#D6F3E7", "#E2DBFB", "#FFF3C4", "#FADBD8", "#D6EAF8"];
-        myInfo.emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        myInfo.color = colors[Math.floor(Math.random() * colors.length)];
-        updateProfilePreview();
-    }
-
-    function updateProfilePreview() {
-        const preview = document.getElementById('profile-preview');
-        if(preview) {
-            preview.innerText = myInfo.emoji;
-            preview.style.backgroundColor = myInfo.color;
-        }
-        localStorage.setItem('moyeora_emoji', myInfo.emoji);
-        localStorage.setItem('moyeora_color', myInfo.color);
-    }
-
-    async function handleEntry() {
-        const nameInput = document.getElementById('user-name').value.trim();
-        if(!nameInput) return alert("닉네임을 입력해주세요!");
-        myInfo.name = nameInput;
-        localStorage.setItem('moyeora_name', nameInput);
-
-        if (!myRoomId) {
-            myRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            await db.collection("rooms").doc(myRoomId).set({ 
-                status: 'voting', 
-                participants: [{...myInfo, votes: {dates: [], times: []}}],
-                adminName: myInfo.name,
-                confirmedSlot: null
-            });
-            window.location.href = window.location.origin + window.location.pathname + "?room=" + myRoomId;
-        } else {
-            const doc = await db.collection("rooms").doc(myRoomId).get();
-            const data = doc.data();
-            const exists = data.participants.find(p => p.name === myInfo.name);
-            if(!exists) {
-                await db.collection("rooms").doc(myRoomId).update({ 
-                    participants: firebase.firestore.FieldValue.arrayUnion({...myInfo, votes: {dates: [], times: []}}) 
-                });
-            }
-            startMonitoring();
-            goToPage('datetime');
-        }
-    }
-
-    function startMonitoring() {
-        db.collection("rooms").doc(myRoomId).onSnapshot((doc) => {
-            const data = doc.data();
-            if(!data) return;
-
-            document.getElementById('member-list').innerHTML = data.participants.map(p => `
-                <div class="flex flex-col items-center">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-sm mb-1" style="background:${p.color}">${p.emoji}</div>
-                    <span class="text-[9px] font-bold text-gray-500">${p.name}</span>
-                </div>
-            `).join('');
-
-            if (data.adminName === myInfo.name) {
-                document.getElementById('admin-panel').classList.remove('hidden');
-                document.getElementById('guest-panel').classList.add('hidden');
-                calculateVoteRanking(data.participants);
-            }
-
-            if (data.status === 'place_voting' && data.confirmedSlot) {
-                document.getElementById('display-final-time').innerText = data.confirmedSlot;
-                goToPage('menu');
-            }
-
-            if (data.status === 'finished') {
-                document.getElementById('ticket-info').innerHTML = `
-                    <div class="text-xl mb-6">${data.confirmedSlot}</div>
-                    <div class="text-2xl text-orange-400 mb-2 font-bold">${data.finalPlace}</div>
-                    <div class="text-[11px] text-gray-400 leading-tight">${data.finalAddr}</div>
-                `;
-                goToPage('ticket');
-            }
-        });
-    }
-
-    function calculateVoteRanking(participants) {
-        let counts = {};
-        participants.forEach(p => {
-            if(p.votes && p.votes.dates) {
-                p.votes.dates.forEach(d => {
-                    p.votes.times.forEach(t => {
-                        const key = `${d} | ${t}`;
-                        counts[key] = (counts[key] || 0) + 1;
-                    });
-                });
-            }
-        });
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        const rankingDiv = document.getElementById('admin-ranking-list');
-        rankingDiv.innerHTML = sorted.map(([slot, count]) => `
-            <div class="slot-card" onclick="confirmSlot('${slot}')">
-                <span class="font-bold text-gray-600">${slot}</span>
-                <span class="bg-orange-100 text-orange-500 font-black px-2 py-1 rounded-lg text-[10px]">${count}명 🔥</span>
-            </div>
-        `).join('') || "<p class='text-center text-gray-300 py-6 text-xs'>투표를 기다리고 있어요!</p>";
-    }
-
-    async function confirmSlot(slotStr) {
-        if(!confirm(`'${slotStr}' 로 확정할까요?`)) return;
-        await db.collection("rooms").doc(myRoomId).update({ status: 'place_voting', confirmedSlot: slotStr });
-    }
-
-    // [중요 2번 요청 보정] 캘린더 정중앙 정렬
-    function renderCalendar() {
-        const grid = document.getElementById('calendar-grid');
-        document.getElementById('calendar-month').innerText = `${viewYear}년 ${viewMonth + 1}월`;
-        grid.innerHTML = "";
-        const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-        const lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
-        for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
-        for(let d=1; d<=lastDate; d++) {
-            const dateStr = `${viewYear}-${viewMonth+1}-${d}`;
-            const cell = document.createElement('div');
-            cell.className = "date-cell" + (mySelection.dates.includes(dateStr) ? " date-active" : "");
-            cell.innerText = d;
-            cell.onclick = () => {
-                if(mySelection.dates.includes(dateStr)) mySelection.dates = mySelection.dates.filter(v => v !== dateStr);
-                else mySelection.dates.push(dateStr);
-                renderCalendar();
-            };
-            grid.appendChild(cell);
-        }
-    }
-    function changeMonth(s) { viewMonth += s; if(viewMonth<0){viewMonth=11;viewYear--;} if(viewMonth>11){viewMonth=0;viewYear++;} renderCalendar(); }
-    
-    // [중요 3번 요청 보정] 시간 선택 및 X 버튼 칩
-    function selectTimeCategory(cat) {
-        document.querySelectorAll('#page-datetime .selectable').forEach(b => b.classList.remove('selected'));
-        const btnId = cat === '점심' ? 'btn-lunch' : (cat === '오후' ? 'btn-after' : 'btn-dinner');
-        document.getElementById(btnId).classList.add('selected');
-        
-        const area = document.getElementById('detail-time-area'); area.innerHTML = "";
-        const hS = cat === '점심' ? 11 : (cat === '오후' ? 14 : 18);
-        const hE = cat === '점심' ? 14 : (cat === '오후' ? 17 : 22);
-        for(let h = hS; h <= hE; h++) {
-            ['00', '30'].forEach(m => {
-                const timeStr = `${h}:${m}`;
-                const chip = document.createElement('div');
-                chip.className = "time-chip" + (mySelection.times.includes(timeStr) ? " time-active" : "");
-                chip.innerText = timeStr;
-                chip.onclick = () => {
-                    if(mySelection.times.includes(timeStr)) mySelection.times = mySelection.times.filter(v => v !== timeStr);
-                    else mySelection.times.push(timeStr);
-                    selectTimeCategory(cat);
-                    updateTimeSummary();
-                };
-                area.appendChild(chip);
-            });
-        }
-    }
-
-    function updateTimeSummary() {
-        const summary = document.getElementById('selected-summary');
-        summary.innerHTML = "";
-        mySelection.times.sort().forEach(t => {
-            const chip = document.createElement('div');
-            chip.className = "summary-chip";
-            chip.innerHTML = `${t} <span class="cursor-pointer opacity-70" onclick="removeTime('${t}')">✕</span>`;
-            summary.appendChild(chip);
-        });
-    }
-    window.removeTime = (t) => {
-        mySelection.times = mySelection.times.filter(v => v !== t);
-        updateTimeSummary();
-        const activeCat = document.querySelector('#page-datetime .selectable.selected')?.id;
-        if(activeCat) selectTimeCategory(activeCat === 'btn-lunch' ? '점심' : (activeCat === 'btn-after' ? '오후' : '저녁'));
-    }
-
-    async function submitVotes() {
-        if(!mySelection.dates.length || !mySelection.times.length) return alert("날짜와 시간을 선택하세요!");
-        const doc = await db.collection("rooms").doc(myRoomId).get();
-        let parts = doc.data().participants;
-        parts = parts.map(p => (p.name === myInfo.name) ? { ...p, votes: { dates: mySelection.dates, times: mySelection.times } } : p);
-        await db.collection("rooms").doc(myRoomId).update({ participants: parts });
-        goToPage('waiting');
-    }
-
-    // [중요 4번 요청 보정] 카카오맵 검색 및 강제 렌더링
-    function selectMenu(el, m) { document.querySelectorAll('#menu-list .selectable').forEach(s => s.classList.remove('selected')); el.classList.add('selected'); mySelection.menu = m; }
-    
-    let ps = new kakao.maps.services.Places();
-    function searchPlaces() {
-        const loc = document.getElementById('search-location').value.trim();
-        if(!mySelection.menu || !loc) return alert("메뉴와 지역을 입력하세요!");
-        goToPage('vote');
-        
-        // 지도가 뜰 공간을 위해 아주 잠시 대기 후 실행 (중요)
-        setTimeout(() => {
-            ps.keywordSearch(`${loc} ${mySelection.menu}`, (data, status) => {
-                if (status === kakao.maps.services.Status.OK) displayPlaces(data);
-                else alert("결과가 없어요!");
-            });
-        }, 400);
-    }
-
-    function displayPlaces(places) {
-        const listEl = document.getElementById('place-list'); listEl.innerHTML = "";
-        const mapContainer = document.getElementById('map');
-        
-        // 지도 초기화
-        const map = new kakao.maps.Map(mapContainer, { center: new kakao.maps.LatLng(places[0].y, places[0].x), level: 3 });
-        const marker = new kakao.maps.Marker({ position: map.getCenter() }); 
-        marker.setMap(map);
-        
-        // 지도가 0x0으로 그려지는 것을 방지하기 위해 강제 레이아웃 재정렬
-        setTimeout(() => map.relayout(), 100);
-
-        places.forEach((p) => {
-            let emoji = p.category_name.includes("카페") ? "☕" : p.category_name.includes("한식") ? "🍚" : p.category_name.includes("일식") ? "🍣" : "🍝";
-            const card = document.createElement('div');
-            card.className = "place-card";
-            card.innerHTML = `<div class="place-thumb">${emoji}</div><div class="flex-1"><div class="font-bold text-[13px] mb-1 text-[#5B4636]">${p.place_name}</div><div class="text-[10px] text-gray-400 mb-1 leading-tight">${p.address_name}</div><a href="https://place.map.kakao.com/${p.id}" target="_blank" class="text-[9px] text-blue-500 font-bold border-b border-blue-100">운영시간 🔗</a></div>`;
-            card.onclick = () => {
-                document.querySelectorAll('.place-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected');
-                mySelection.place = p.place_name; mySelection.address = p.address_name;
-                const pos = new kakao.maps.LatLng(p.y, p.x);
-                map.panTo(pos); 
-                marker.setPosition(pos);
-            };
-            listEl.appendChild(card);
-        });
-    }
-
-    async function finishVote() {
-        if(!mySelection.place) return alert("장소를 골라주세요!");
-        await db.collection("rooms").doc(myRoomId).update({ status: 'finished', finalPlace: mySelection.place, finalAddr: mySelection.address });
-    }
-
-    function copyLink() { navigator.clipboard.writeText(window.location.href); alert("링크가 복사되었습니다!"); }
-
-    window.onload = () => {
-        if (myRoomId) {
-            goToPage('profile-setup');
-        } else {
-            randomizeProfile();
-            goToPage('home');
-        }
-    };
-</script>
-
+<!-- 자바스크립트 로드 (파일 분리) -->
+<script src="app.js"></script>
 </body>
 </html>
