@@ -10,11 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
-    <!-- 외부 SDK (Firebase, Kakao) -->
+    <!-- 외부 SDK (Firebase) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- ⚠️ 카카오맵 SDK (주신 JS Key 적용) -->
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f8d8690786ee5696eb5608d1f535146a&libraries=services"></script>
+    
+    <!-- ⚠️ 카카오맵 SDK (요청하신 a3af... 키로 교체 완료) -->
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=a3af4e8999293e0dfe43a0bd1831c944&libraries=services"></script>
 </head>
 <body>
 
@@ -22,7 +23,7 @@
     <!-- 화면 1: 홈 -->
     <div id="page-home" class="page active">
         <div class="flex flex-col items-center justify-center h-full text-center">
-            <div class="text-8xl mb-8">🐱</div>
+            <div class="text-8xl mb-8 animate-bounce">🐱</div>
             <h1 class="jua text-4xl mb-4 text-[#5B4636]">모여라! 우리들</h1>
             <p class="text-sm text-gray-400 mb-12">우리 오늘 어디서 모일까?<br>가장 설레는 방법으로 정해봐요!</p>
             <button class="btn-primary" onclick="goToPage('profile-setup')">➕ 약속 방 만들기</button>
@@ -44,10 +45,10 @@
     <div id="page-datetime" class="page">
         <h2 class="jua text-2xl mb-6 text-[#5B4636]">언제가 좋아? 🗓️</h2>
         <div class="bg-white border-2 border-[#F3EADA] rounded-[36px] p-6 mb-8 text-center shadow-sm">
-            <div class="flex justify-between items-center mb-6 px-2">
-                <button onclick="changeMonth(-1)" class="text-2xl font-bold text-gray-300">‹</button>
-                <div id="calendar-month" class="jua text-lg">2024년 10월</div>
-                <button onclick="changeMonth(1)" class="text-2xl font-bold text-gray-300">›</button>
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="changeMonth(-1)" class="text-2xl font-bold text-gray-300 px-2">‹</button>
+                <div id="calendar-month" class="jua text-lg text-[#5B4636]">2024년 10월</div>
+                <button onclick="changeMonth(1)" class="text-2xl font-bold text-gray-300 px-2">›</button>
             </div>
             <div class="calendar-grid text-[10px] font-bold text-gray-300 mb-4 uppercase">
                 <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
@@ -74,14 +75,14 @@
         <div class="bg-white border-2 border-[#F3EADA] rounded-[36px] p-6 mb-8 shadow-sm">
             <div id="member-list" class="grid grid-cols-3 gap-6"></div>
         </div>
-        <div id="admin-panel" class="hidden">
-            <div class="bg-[#F0FDF4] border-2 border-[#BBF7D0] rounded-[32px] p-6 mb-6 text-left">
+        <div id="admin-panel" class="hidden text-left">
+            <div class="bg-[#F0FDF4] border-2 border-[#BBF7D0] rounded-[32px] p-6 mb-6">
                 <p class="jua text-[#166534] mb-4 text-center text-sm">👑 방장님! 일시를 확정해주세요</p>
-                <div id="admin-ranking-list" class="max-h-52 overflow-y-auto pr-1"></div>
+                <div id="admin-ranking-list" class="max-h-52 overflow-y-auto pr-1 text-xs"></div>
             </div>
         </div>
-        <div id="guest-panel" class="text-center p-10 bg-gray-50 rounded-[36px] mb-6 border-2 border-dashed border-gray-100">
-            <p class="text-xs text-gray-400">방장이 약속 일시를 확정할 때까지 기다려주세요!</p>
+        <div id="guest-panel" class="text-center p-10 bg-gray-50 rounded-[36px] mb-6 border-2 border-dashed border-gray-100 text-xs text-gray-400">
+            방장이 약속 일시를 확정할 때까지 기다려주세요!
         </div>
         <button class="bg-[#FFE39A] p-5 rounded-3xl text-center w-full font-bold text-[#8A6A50] shadow-sm active:scale-95 transition-all" onclick="copyLink()">🔗 초대 링크 복사하기</button>
     </div>
@@ -89,10 +90,10 @@
     <!-- 화면 5: 메뉴 선택 -->
     <div id="page-menu" class="page">
         <div class="bg-[#F0FDF4] p-6 rounded-[32px] mb-8 text-center border-2 border-[#BBF7D0]">
-            <p class="text-[10px] font-bold text-[#3FAE85] uppercase tracking-widest mb-1">Confirmed Time</p>
+            <p class="text-[10px] font-bold text-[#3FAE85] uppercase tracking-widest mb-1">Confirmed Appointment</p>
             <p class="jua text-lg text-[#166534]" id="display-final-time">-</p>
         </div>
-        <h2 class="jua text-2xl mb-6">뭐 먹고 싶어? 🍕</h2>
+        <h2 class="jua text-2xl mb-6 text-[#5B4636]">뭐 먹고 싶어? 🍕</h2>
         <div class="grid grid-cols-2 gap-4 mb-10" id="menu-list">
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '한식')">🍚 한식</div>
             <div class="selectable p-5 text-center jua text-lg" onclick="selectMenu(this, '일식')">🍣 일식</div>
@@ -111,17 +112,17 @@
         <button class="btn-primary" onclick="finishVote()">최종 투표 마감! 🎫</button>
     </div>
 
-    <!-- 화면 7: 결과 티켓 -->
+    <!-- 화면 7: 티켓 -->
     <div id="page-ticket" class="page items-center justify-center text-center">
         <div class="bg-white rounded-[45px] shadow-2xl w-full p-10 border-2 border-[#F3EADA]">
-            <h2 class="jua text-4xl text-[#3FAE85] mb-8">모임 티켓 🎫</h2>
+            <h2 class="jua text-4xl text-[#3FAE85] mb-8 font-bold">모임 티켓 🎫</h2>
             <div id="ticket-info" class="space-y-6 jua"></div>
         </div>
         <button class="btn-primary mt-12" onclick="location.href='/'">새 약속 만들기</button>
     </div>
 </div>
 
-<!-- 자바스크립트 로드 (파일 분리) -->
+<!-- 자바스크립트 로드 -->
 <script src="app.js"></script>
 </body>
 </html>
