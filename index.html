@@ -3,144 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모여라! 우리들 - 스마트 약속 조율</title>
+    <title>모여라! 우리들 - 완벽한 약속 조율</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- 파이어베이스 및 카카오맵 도구 -->
+    <!-- 파이어베이스 및 카카오맵 SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- 카카오맵 API (보내주신 키 적용 / 주소 검색 서비스 추가) -->
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a3af4e8999293e0dfe43a0bd1831c944&libraries=services"></script>
 
     <style>
-        :root { --main-mint: #3FAE85; --main-orange: #F0854B; --text-brown: #5B4636; }
+        :root { --main-mint: #3FAE85; --main-orange: #F0854B; --text-brown: #5B4636; --soft-bg: #FDF6EA; }
         body { margin: 0; background: #FBE9D0; font-family: 'Gowun Dodum', sans-serif; color: var(--text-brown); display: flex; justify-content: center; min-height: 100vh; }
         .jua { font-family: 'Jua', sans-serif; }
-        .app-container { width: 100%; max-width: 412px; height: 840px; background: #FFFDF8; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .app-container { 
+            width: 100%; max-width: 412px; height: 840px; background: #FFFDF8; 
+            border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(91, 70, 54, 0.2); 
+            position: relative; overflow: hidden; display: flex; flex-direction: column; 
+        }
+        
         .page { display: none; width: 100%; height: 100%; flex-direction: column; padding: 24px; overflow-y: auto; }
         .page.active { display: flex; }
-        .btn-primary { background: var(--main-mint); color: white; border-radius: 20px; padding: 18px; text-align: center; font-family: 'Jua'; font-size: 18px; cursor: pointer; border: none; width: 100%; margin-top: auto; flex-shrink: 0; }
         
-        .selectable { cursor: pointer; border: 2px solid #F3EADA; border-radius: 20px; transition: 0.2s; background: white; }
-        .selected { border-color: var(--main-mint) !important; background: #F0F9F6 !important; }
+        /* 버튼 & 선택 요소 */
+        .btn-primary { background: var(--main-mint); color: white; border-radius: 20px; padding: 18px; text-align: center; font-family: 'Jua'; font-size: 18px; cursor: pointer; border: none; width: 100%; margin-top: auto; flex-shrink: 0; transition: 0.2s; }
+        .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
+        
+        .selectable { cursor: pointer; border: 2px solid #F3EADA; border-radius: 22px; transition: 0.2s; background: white; }
+        .selected { border-color: var(--main-mint) !important; background: #F0F9F6 !important; box-shadow: 0 4px 12px rgba(63, 174, 133, 0.1); }
         
         /* 캘린더 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .date-cell { aspect-ratio: 1/1; display: flex; items-center; justify-content: center; font-size: 12px; font-weight: bold; border-radius: 50%; cursor: pointer; }
-        .date-cell.active-date { background: var(--main-mint) !important; color: white !important; }
-        
-        /* 맛집 카드 디자인 강화 */
-        .place-card { padding: 16px; border: 2px solid #F3EADA; border-radius: 24px; background: white; cursor: pointer; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; transition: 0.2s; }
-        .place-card.selected { border-color: var(--main-mint); background: #F0F9F6; box-shadow: 0 8px 16px rgba(63, 174, 133, 0.1); }
-        .place-thumb { width: 64px; height: 64px; background: #FBF3E7; border-radius: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 32px; }
-        
-        /* 지도 컨테이너 */
-        #map { width: 100%; height: 240px; border-radius: 28px; border: 2px solid #F3EADA; flex-shrink: 0; margin-bottom: 16px; background: #eee; }
+        .date-cell { aspect-ratio: 1/1; display: flex; items-center; justify-content: center; font-size: 13px; font-weight: bold; border-radius: 50%; cursor: pointer; transition: 0.2s; }
+        .date-cell:hover { background: #F3EADA; }
+        .date-active { background: var(--main-mint) !important; color: white !important; }
 
-        .finalize-btn { background: white; border: 1px solid #F3EADA; padding: 12px 16px; border-radius: 16px; font-size: 11px; text-align: left; cursor: pointer; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .finalize-btn:hover { background: #F0F9F6; border-color: var(--main-mint); }
+        /* 시간 칩 */
+        .time-chip { padding: 10px 14px; border-radius: 14px; border: 2px solid #F3EADA; font-size: 12px; font-weight: 700; cursor: pointer; background: white; transition: 0.2s; text-align: center; }
+        .time-active { background: var(--main-orange) !important; color: white !important; border-color: var(--main-orange) !important; }
+        .summary-chip { background: #F0F9F6; color: var(--main-mint); padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight: bold; border: 1px solid var(--main-mint); margin: 2px; }
+
+        /* 맛집 카드 & 지도 */
+        #map { width: 100%; height: 240px; border-radius: 28px; border: 2px solid #F3EADA; flex-shrink: 0; margin-bottom: 16px; background: #f0f0f0; }
+        .place-card { padding: 16px; border: 2px solid #F3EADA; border-radius: 24px; background: white; cursor: pointer; margin-bottom: 12px; display: flex; gap: 14px; align-items: center; }
+        .place-card.selected { border-color: var(--main-mint); background: #F0F9F6; }
+        .place-thumb { width: 60px; height: 60px; background: #FBF6EC; border-radius: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+
+        .admin-finalize-box { background: #F0FDF4; border: 2px solid #BBF7D0; border-radius: 24px; padding: 20px; margin-bottom: 20px; }
+        .slot-btn { background: white; border: 1px solid #F3EADA; padding: 12px; border-radius: 15px; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .slot-btn:hover { border-color: var(--main-mint); color: var(--main-mint); }
+        
+        /* 스크롤바 숨기기 */
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <!-- 1. 홈 & 프로필 -->
+    <!-- PAGE 1: 홈 -->
     <div id="page-home" class="page active items-center justify-center text-center">
         <div class="text-8xl mb-8 animate-bounce">🐱</div>
-        <h1 class="jua text-3xl mb-4 text-[#5B4636]">모여라! 우리들</h1>
+        <h1 class="jua text-3xl mb-4">모여라! 우리들</h1>
+        <p class="text-[#9C8B7D] mb-10 text-sm">약속 정하기 힘드셨죠?<br>날짜부터 맛집까지 한 번에!</p>
         <button class="btn-primary" onclick="goToPage('profile-setup')">➕ 약속 방 만들기</button>
     </div>
 
+    <!-- PAGE 2: 프로필 설정 -->
     <div id="page-profile-setup" class="page items-center justify-center text-center">
         <h2 class="jua text-2xl mb-8">내 프로필 만들기 ✨</h2>
-        <div id="profile-preview" class="w-20 h-20 text-4xl mb-6 rounded-full flex items-center justify-center mx-auto" style="background-color: #FFE0C7;">🐱</div>
-        <input type="text" id="user-name" placeholder="이름을 입력해주세요" class="w-full p-4 border-2 border-[#F3EADA] rounded-2xl mb-10 text-center focus:outline-none focus:border-[#3FAE85]">
+        <div id="profile-preview" class="w-24 h-24 text-5xl mb-8 rounded-full flex items-center justify-center mx-auto shadow-inner" style="background-color: #FFE0C7;">🐱</div>
+        <input type="text" id="user-name" maxlength="8" placeholder="이름을 입력해주세요" class="w-full p-5 border-2 border-[#F3EADA] rounded-2xl mb-12 text-center focus:outline-none focus:border-[#3FAE85] font-bold">
         <button class="btn-primary" onclick="handleEntry()">입장하기 🐾</button>
     </div>
 
-    <!-- Phase 1: 날짜 및 시간 투표 -->
+    <!-- PAGE 3: 날짜 및 시간 조율 (핵심 보정 영역) -->
     <div id="page-datetime" class="page">
         <h2 class="jua text-2xl mb-6">언제가 좋아? 🗓️</h2>
-        <div class="bg-white border-2 border-[#F3EADA] rounded-[32px] p-5 mb-6 text-center shadow-sm">
+        <div class="bg-white border-2 border-[#F3EADA] rounded-[32px] p-5 mb-8 text-center shadow-sm">
             <div class="flex justify-between items-center mb-5 px-2">
-                <button onclick="changeMonth(-1)" class="text-xl font-bold text-gray-300">‹</button>
+                <button onclick="changeMonth(-1)" class="text-xl font-bold text-gray-300 px-2">‹</button>
                 <div id="calendar-month" class="jua text-lg">2024년 10월</div>
-                <button onclick="changeMonth(1)" class="text-xl font-bold text-gray-300">›</button>
+                <button onclick="changeMonth(1)" class="text-xl font-bold text-gray-300 px-2">›</button>
+            </div>
+            <div class="calendar-grid text-[10px] font-bold text-gray-300 mb-2">
+                <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
             </div>
             <div class="calendar-grid" id="calendar-grid"></div>
         </div>
-        <div class="mb-4">
-            <p class="text-[11px] font-bold text-[#B3A18F] mb-3 uppercase tracking-widest">시간대 선택 (중복 가능)</p>
-            <div class="grid grid-cols-3 gap-3 mb-4">
-                <div class="selectable p-3 text-center" id="btn-lunch" onclick="toggleTimeCategory('점심')">☀️<br><span class="jua text-[12px]">점심</span></div>
-                <div class="selectable p-3 text-center" id="btn-after" onclick="toggleTimeCategory('오후')">☕<br><span class="jua text-[12px]">오후</span></div>
-                <div class="selectable p-3 text-center" id="btn-dinner" onclick="toggleTimeCategory('저녁')">🌙<br><span class="jua text-[12px]">저녁</span></div>
+
+        <div class="mb-8">
+            <p class="text-[11px] font-bold text-[#B3A18F] mb-4 uppercase tracking-widest">시간대 선택 (중복 가능)</p>
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="selectable p-4 text-center" id="btn-lunch" onclick="selectTimeCategory('점심')">☀️<br><span class="jua text-xs">점심</span></div>
+                <div class="selectable p-4 text-center" id="btn-after" onclick="selectTimeCategory('오후')">☕<br><span class="jua text-xs">오후</span></div>
+                <div class="selectable p-4 text-center" id="btn-dinner" onclick="selectTimeCategory('저녁')">🌙<br><span class="jua text-xs">저녁</span></div>
             </div>
-            <div id="detail-time-area" class="flex flex-wrap gap-2 mb-4"></div>
+            <!-- 세부 시간 칩 리스트 (보정됨) -->
+            <div id="detail-time-area" class="grid grid-cols-4 gap-2 mb-4"></div>
+            <div id="selected-summary" class="flex flex-wrap gap-1 mt-2 border-t pt-4 border-dashed border-gray-100"></div>
         </div>
-        <button class="btn-primary" onclick="submitToWaiting()">의견 제출하고 대기하기 🗳️</button>
+        <button class="btn-primary" onclick="submitVotes()">의견 제출하고 대기하기 🗳️</button>
     </div>
 
-    <!-- 대기실 (방장 확정) -->
+    <!-- PAGE 4: 대기실 -->
     <div id="page-waiting" class="page">
         <h2 class="jua text-2xl mb-2 text-center">친구들을 기다려요 💬</h2>
-        <p class="text-center text-[11px] text-gray-400 mb-6">투표 현황을 실시간으로 확인하세요!</p>
-        <div class="bg-white border-2 border-[#F3EADA] rounded-[32px] p-6 mb-6 shadow-sm">
-            <div id="member-list" class="grid grid-cols-3 gap-4 mb-2"></div>
+        <p class="text-center text-[11px] text-gray-400 mb-8">모두 투표하면 방장이 확정할 수 있어요!</p>
+        
+        <div class="bg-white border-2 border-[#F3EADA] rounded-[32px] p-6 mb-8 shadow-sm">
+            <div id="member-list" class="grid grid-cols-3 gap-6"></div>
         </div>
-        <div id="admin-panel" class="hidden">
-            <div class="bg-[#F0FDF4] border-2 border-[#BBF7D0] rounded-[24px] p-5 mb-4">
-                <p class="jua text-[#166534] mb-3 text-sm">👑 방장님! 약속 일시를 확정해주세요</p>
-                <div id="vote-summary-list" class="max-h-48 overflow-y-auto pr-1"></div>
+
+        <!-- 방장 전용 확정 패널 -->
+        <div id="admin-panel" class="hidden animate-fade-in">
+            <div class="admin-finalize-box">
+                <p class="jua text-[#166534] mb-4 text-sm text-center">👑 방장님! 일시를 하나 확정해주세요</p>
+                <div id="admin-slot-list" class="max-h-48 overflow-y-auto pr-1"></div>
             </div>
         </div>
-        <div id="guest-panel" class="text-center p-8 bg-gray-50 rounded-[24px] mb-4">
-            <p class="text-xs text-gray-400 leading-relaxed">방장님이 일시를 확정할 때까지<br>잠시만 기다려주세요! 🐾</p>
+
+        <div id="guest-panel" class="text-center p-8 bg-gray-50 rounded-[32px] mb-4 border-2 border-dashed border-gray-100">
+            <p class="text-xs text-gray-400 leading-relaxed">방장님이 약속 일시를<br>확정할 때까지 기다려주세요! 🐾</p>
         </div>
-        <button class="bg-[#FFE39A] p-4 rounded-2xl text-center cursor-pointer mb-2 border-none w-full font-bold text-[#8A6A50]" onclick="copyLink()">🔗 초대 링크 복사하기</button>
+
+        <button class="bg-[#FFE39A] p-5 rounded-2xl text-center cursor-pointer mb-2 w-full font-bold text-[#8A6A50] shadow-sm" onclick="copyLink()">🔗 초대 링크 복사하기</button>
     </div>
 
-    <!-- Phase 2: 메뉴 & 장소 검색 -->
+    <!-- PAGE 5: 메뉴 및 장소 검색 -->
     <div id="page-menu" class="page">
-        <div class="bg-[#F0FDF4] p-5 rounded-[24px] mb-8 text-center border-2 border-[#BBF7D0]">
+        <div class="bg-[#F0FDF4] p-5 rounded-[28px] mb-8 text-center border-2 border-[#BBF7D0]">
             <p class="text-[10px] font-bold text-[#3FAE85] uppercase tracking-widest mb-1">Confirmed Time</p>
-            <p class="jua text-base text-[#166534]" id="final-confirmed-time">-</p>
+            <p class="jua text-lg text-[#166534]" id="display-final-time">-</p>
         </div>
-        <h2 class="jua text-2xl mb-6">뭐 먹을까? 🍕</h2>
-        <div class="grid grid-cols-2 gap-3 mb-6" id="menu-list">
-            <div class="selectable p-4 text-center jua" onclick="selectMenu(this, '한식')">🍚 한식</div>
-            <div class="selectable p-4 text-center jua" onclick="selectMenu(this, '일식')">🍣 일식</div>
-            <div class="selectable p-4 text-center jua" onclick="selectMenu(this, '양식')">🍝 양식</div>
-            <div class="selectable p-4 text-center jua" onclick="selectMenu(this, '카페')">🍰 카페</div>
+        <h2 class="jua text-2xl mb-6">뭐 먹고 싶어? 🍕</h2>
+        <div class="grid grid-cols-2 gap-3 mb-8" id="menu-list">
+            <div class="selectable p-5 text-center jua" onclick="selectMenu(this, '한식')">🍚 한식</div>
+            <div class="selectable p-5 text-center jua" onclick="selectMenu(this, '일식')">🍣 일식</div>
+            <div class="selectable p-5 text-center jua" onclick="selectMenu(this, '양식')">🍝 양식</div>
+            <div class="selectable p-5 text-center jua" onclick="selectMenu(this, '카페')">🍰 카페</div>
         </div>
         <p class="text-[11px] font-bold text-[#B3A18F] mb-3 uppercase tracking-wider">어디 근처에서 볼까?</p>
-        <input type="text" id="search-location" placeholder="예: 강남역, 성수동 등" class="w-full p-4 border-2 border-[#F3EADA] rounded-2xl mb-6 text-center focus:outline-none focus:border-[#3FAE85]">
+        <input type="text" id="search-location" placeholder="예: 강남역, 성수동 등" class="w-full p-5 border-2 border-[#F3EADA] rounded-2xl mb-8 text-center focus:outline-none focus:border-[#3FAE85] font-bold">
         <button class="btn-primary" onclick="searchPlaces()">맛집 리스트 불러오기 ✨</button>
     </div>
 
-    <!-- 장소 투표 -->
+    <!-- PAGE 6: 장소 투표 (지도 보정됨) -->
     <div id="page-vote" class="page">
         <h2 class="jua text-2xl mb-4">장소 정하기! 📍</h2>
         <div id="map"></div>
-        <div id="place-list" class="flex-1 overflow-y-auto pr-1">
-             <div class="text-center py-10 text-gray-300">검색 중...</div>
-        </div>
+        <div id="place-list" class="flex-1 overflow-y-auto pr-1"></div>
         <button class="btn-primary" onclick="finishVote()">최종 투표 마감! 🎫</button>
     </div>
 
-    <!-- 티켓 -->
+    <!-- PAGE 7: 티켓 결과 -->
     <div id="page-ticket" class="page items-center justify-center">
         <div class="bg-white rounded-[40px] shadow-2xl w-full p-10 text-center border-2 border-[#F3EADA] animate-slide-up">
-            <h2 class="jua text-3xl text-[#3FAE85] mb-6">모임 티켓 🎫</h2>
-            <div id="ticket-info" class="space-y-4 jua"></div>
+            <h2 class="jua text-4xl text-[#3FAE85] mb-8">모임 티켓 🎫</h2>
+            <div id="ticket-info" class="space-y-6 jua"></div>
         </div>
-        <button class="btn-primary mt-10" onclick="location.href='/'">처음으로</button>
+        <button class="btn-primary mt-12" onclick="location.href='/'">새 약속 만들기</button>
     </div>
 </div>
 
 <script>
-    // Firebase 설정
+    // 1. 파이어베이스 초기 설정
     const firebaseConfig = {
         apiKey: "AIzaSyBqrEr1J2isB6NpoK_ONxOgmyl_cvNAnVs",
         authDomain: "moyeora-75ccf.firebaseapp.com",
@@ -156,21 +183,29 @@
     let myRoomId = new URLSearchParams(window.location.search).get('room');
     let viewYear = new Date().getFullYear();
     let viewMonth = new Date().getMonth();
+    
+    // 현재 유저의 프로필 및 선택 정보
     let myInfo = { name: "", emoji: "🐱", color: "#FFE0C7" };
     let mySelection = { dates: [], times: [], menu: "", place: "", address: "" };
 
-    // 페이지 전환
+    // 2. 페이지 이동 로직 (매우 중요)
     function goToPage(id) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         const target = document.getElementById('page-' + id);
         if(target) target.classList.add('active');
+        
+        // 페이지가 열릴 때 필요한 로직들 실행
         if(id === 'datetime') renderCalendar();
+        if(id === 'waiting') renderSummary(); // 대기실 갈 때 내 요약본 업데이트
     }
 
-    // 입장 로직
+    // 3. 입장 처리
     async function handleEntry() {
-        myInfo.name = document.getElementById('user-name').value || "말랑이";
+        const inputName = document.getElementById('user-name').value.trim();
+        myInfo.name = inputName || "말랑이";
+        
         if (!myRoomId) {
+            // 방장인 경우
             myRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             await db.collection("rooms").doc(myRoomId).set({ 
                 status: 'voting', 
@@ -180,68 +215,71 @@
             });
             window.history.pushState({}, '', `?room=${myRoomId}`);
         } else {
-            await db.collection("rooms").doc(myRoomId).update({ participants: firebase.firestore.FieldValue.arrayUnion(myInfo) });
+            // 참가자인 경우
+            await db.collection("rooms").doc(myRoomId).update({ 
+                participants: firebase.firestore.FieldValue.arrayUnion(myInfo) 
+            });
         }
         startMonitoring();
         goToPage('datetime');
     }
 
-    // 실시간 모니터링
+    // 4. 실시간 상태 감시 (서버 데이터와 화면 동기화)
     function startMonitoring() {
         db.collection("rooms").doc(myRoomId).onSnapshot((doc) => {
             const data = doc.data();
             if(!data) return;
 
+            // 멤버 목록 실시간 갱신
             const listDiv = document.getElementById('member-list');
-            listDiv.innerHTML = data.participants.map(p => `<div class="flex flex-col items-center"><div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-sm mb-1" style="background:${p.color}">${p.emoji}</div><span class="text-[8px] font-bold">${p.name}</span></div>`).join('');
+            listDiv.innerHTML = data.participants.map(p => `
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-sm mb-1" style="background:${p.color}">${p.emoji}</div>
+                    <span class="text-[9px] font-bold text-gray-500">${p.name}</span>
+                </div>
+            `).join('');
 
+            // 내가 방장인지 체크
             if (data.adminName === myInfo.name) {
                 document.getElementById('admin-panel').classList.remove('hidden');
                 document.getElementById('guest-panel').classList.add('hidden');
-                renderAdminVoteSummary();
+                updateAdminSlotList(); // 방장용 확정 리스트 갱신
             }
 
+            // Phase 전환 체크 (날짜 확정됨)
             if (data.status === 'place_voting' && data.confirmedSlot) {
-                document.getElementById('final-confirmed-time').innerText = data.confirmedSlot;
+                document.getElementById('display-final-time').innerText = data.confirmedSlot;
                 goToPage('menu');
             }
 
+            // 최종 마감 체크
             if (data.status === 'finished') {
-                document.getElementById('ticket-info').innerHTML = `<div class="text-gray-400 text-xs">일시</div><div>${data.confirmedSlot}</div><div class="text-gray-400 text-xs mt-4">장소</div><div class="text-orange-400">${data.finalPlace}</div><div class="text-[10px] text-gray-300 mt-1">${data.finalAddr}</div>`;
+                document.getElementById('ticket-info').innerHTML = `
+                    <div class="text-sm text-gray-300 font-bold uppercase mb-2 tracking-widest">Confirmed Time</div>
+                    <div class="text-xl mb-6">${data.confirmedSlot}</div>
+                    <div class="text-sm text-gray-300 font-bold uppercase mb-2 tracking-widest">Confirmed Place</div>
+                    <div class="text-2xl text-orange-400 mb-2">${data.finalPlace}</div>
+                    <div class="text-[11px] text-gray-300 leading-tight">${data.finalAddr}</div>
+                `;
                 goToPage('ticket');
             }
         });
     }
 
-    function renderAdminVoteSummary() {
-        const list = document.getElementById('vote-summary-list');
-        list.innerHTML = "";
-        mySelection.dates.forEach(d => {
-            mySelection.times.forEach(t => {
-                const btn = document.createElement('div');
-                btn.className = "finalize-btn";
-                btn.innerHTML = `<span class="jua text-gray-600">${d} (${t})</span> <span class="text-[#3FAE85] font-bold text-[10px]">확정하기 ></span>`;
-                btn.onclick = () => finalizeSlot(d, t);
-                list.appendChild(btn);
-            });
-        });
-    }
-
-    async function finalizeSlot(d, t) {
-        await db.collection("rooms").doc(myRoomId).update({ status: 'place_voting', confirmedSlot: `${d} (${t})` });
-    }
-
+    // 5. 캘린더 렌더링
     function renderCalendar() {
         const grid = document.getElementById('calendar-grid');
         document.getElementById('calendar-month').innerText = `${viewYear}년 ${viewMonth + 1}월`;
         grid.innerHTML = "";
+        
         const firstDay = new Date(viewYear, viewMonth, 1).getDay();
         const lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
+        
         for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
         for(let d=1; d<=lastDate; d++) {
             const dateStr = `${viewYear}-${viewMonth+1}-${d}`;
             const cell = document.createElement('div');
-            cell.className = "date-cell" + (mySelection.dates.includes(dateStr) ? " active-date" : "");
+            cell.className = "date-cell" + (mySelection.dates.includes(dateStr) ? " date-active" : "");
             cell.innerText = d;
             cell.onclick = () => {
                 if(mySelection.dates.includes(dateStr)) mySelection.dates = mySelection.dates.filter(v => v !== dateStr);
@@ -251,63 +289,108 @@
             grid.appendChild(cell);
         }
     }
-    function changeMonth(s) { viewMonth+=s; if(viewMonth<0){viewMonth=11;viewYear--;} if(viewMonth>11){viewMonth=0;viewYear++;} renderCalendar(); }
-    
-    function toggleTimeCategory(cat) {
+    function changeMonth(s) { viewMonth += s; if(viewMonth<0){viewMonth=11;viewYear--;} if(viewMonth>11){viewMonth=0;viewYear++;} renderCalendar(); }
+
+    // 6. 시간대 선택 (보정 완료)
+    function selectTimeCategory(cat) {
         document.querySelectorAll('#page-datetime .selectable').forEach(b => b.classList.remove('selected'));
-        document.getElementById('btn-'+(cat==='점심'?'lunch':cat==='오후'?'after':'dinner')).classList.add('selected');
-        const area = document.getElementById('detail-time-area'); area.innerHTML = "";
-        const hS = cat==='점심'?11:(cat==='오후'?14:18), hE = cat==='점심'?14:(cat==='오후'?17:22);
-        for(let h=hS; h<=hE; h++) {
-            [`${h}:00`, `${h}:30`].forEach(t => {
+        const btnId = cat === '점심' ? 'btn-lunch' : (cat === '오후' ? 'btn-after' : 'btn-dinner');
+        document.getElementById(btnId).classList.add('selected');
+        
+        const area = document.getElementById('detail-time-area');
+        area.innerHTML = "";
+        
+        const hS = cat === '점심' ? 11 : (cat === '오후' ? 14 : 18);
+        const hE = cat === '점심' ? 14 : (cat === '오후' ? 17 : 22);
+        
+        for(let h = hS; h <= hE; h++) {
+            ['00', '30'].forEach(m => {
+                const timeStr = `${h}:${m}`;
                 const chip = document.createElement('div');
-                chip.className = "time-chip" + (mySelection.times.includes(t) ? " active-time" : "");
-                chip.innerText = t;
+                chip.className = "time-chip" + (mySelection.times.includes(timeStr) ? " time-active" : "");
+                chip.innerText = timeStr;
                 chip.onclick = () => {
-                    if(mySelection.times.includes(t)) mySelection.times = mySelection.times.filter(v=>v!==t);
-                    else mySelection.times.push(t);
-                    toggleTimeCategory(cat);
+                    if(mySelection.times.includes(timeStr)) {
+                        mySelection.times = mySelection.times.filter(v => v !== timeStr);
+                    } else {
+                        mySelection.times.push(timeStr);
+                    }
+                    selectTimeCategory(cat); // 다시 렌더링해서 색깔 바꿈
+                    renderSummary();
                 };
                 area.appendChild(chip);
             });
         }
     }
 
-    function submitToWaiting() { if(!mySelection.dates.length || !mySelection.times.length) return alert("날짜와 시간을 선택하세요!"); goToPage('waiting'); }
+    function renderSummary() {
+        const summary = document.getElementById('selected-summary');
+        summary.innerHTML = mySelection.times.sort().map(v => `<div class="summary-chip">${v}</div>`).join('');
+    }
 
-    // 맛집 검색
-    function selectMenu(el, m) { document.querySelectorAll('#menu-list .selectable').forEach(s => s.classList.remove('selected')); el.classList.add('selected'); mySelection.menu = m; }
-    
+    function submitVotes() {
+        if(!mySelection.dates.length || !mySelection.times.length) return alert("날짜와 시간을 선택해주세요!");
+        goToPage('waiting');
+    }
+
+    // 7. 방장용 슬롯 리스트 갱신 (확정용)
+    function updateAdminSlotList() {
+        const list = document.getElementById('admin-slot-list');
+        list.innerHTML = "";
+        // 내가 선택한 날짜와 시간을 조합해서 확정 후보를 보여줌
+        mySelection.dates.forEach(d => {
+            mySelection.times.forEach(t => {
+                const slot = document.createElement('div');
+                slot.className = "slot-btn";
+                slot.innerHTML = `<span>📅 ${d} | ⏰ ${t}</span> <b class="text-mint-500">확정하기 ></b>`;
+                slot.onclick = () => confirmSlot(d, t);
+                list.appendChild(slot);
+            });
+        });
+    }
+
+    async function confirmSlot(d, t) {
+        if(!confirm(`정말 ${d} (${t}) 로 확정하시겠어요?`)) return;
+        await db.collection("rooms").doc(myRoomId).update({ 
+            status: 'place_voting', 
+            confirmedSlot: `${d} (${t})` 
+        });
+    }
+
+    // 8. 맛집 검색 & 지도 (보정 완료)
+    function selectMenu(el, m) {
+        document.querySelectorAll('#menu-list .selectable').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+        mySelection.menu = m;
+    }
+
     let ps = new kakao.maps.services.Places();
     let map, marker;
 
     function searchPlaces() {
-        const loc = document.getElementById('search-location').value;
-        if(!mySelection.menu || !loc) return alert("메뉴와 지역을 모두 입력하세요!");
-
-        // 먼저 페이지 이동
+        const loc = document.getElementById('search-location').value.trim();
+        if(!mySelection.menu || !loc) return alert("메뉴와 지역을 입력해주세요!");
         goToPage('vote');
-
-        // 카카오 검색 실행
+        
         ps.keywordSearch(`${loc} ${mySelection.menu}`, (data, status) => {
             if (status === kakao.maps.services.Status.OK) {
-                // 약간의 지연시간을 두어 페이지가 완전히 뜬 후 지도 렌더링
-                setTimeout(() => displayPlaces(data), 100);
+                // 페이지 전환 후 지도를 그리기 위해 약간의 지연
+                setTimeout(() => initMapAndPlaces(data), 200);
             } else {
-                alert("검색 결과가 없어요!");
+                alert("검색 결과가 없어요! 지역명을 다시 확인해주세요.");
                 goToPage('menu');
             }
         });
     }
 
-    function displayPlaces(places) {
+    function initMapAndPlaces(places) {
         const listEl = document.getElementById('place-list');
         listEl.innerHTML = "";
         
         // 지도 초기화
         const first = places[0];
-        const mapContainer = document.getElementById('map');
-        map = new kakao.maps.Map(mapContainer, { center: new kakao.maps.LatLng(first.y, first.x), level: 3 });
+        const container = document.getElementById('map');
+        map = new kakao.maps.Map(container, { center: new kakao.maps.LatLng(first.y, first.x), level: 3 });
         marker = new kakao.maps.Marker({ position: map.getCenter() });
         marker.setMap(map);
 
@@ -323,11 +406,11 @@
             card.innerHTML = `
                 <div class="place-thumb">${emoji}</div>
                 <div class="flex-1">
-                    <div class="font-bold text-[13px] mb-0.5 text-[#5B4636]">${p.place_name}</div>
-                    <div class="text-[10px] text-gray-400 mb-1 leading-tight">${p.address_name}</div>
-                    <div class="flex justify-between items-center mt-2">
-                         <span class="text-[9px] text-[#3FAE85] font-bold">${p.category_name.split(' > ').pop()}</span>
-                         <a href="https://place.map.kakao.com/${p.id}" target="_blank" class="text-[9px] bg-gray-100 px-2 py-1 rounded-md text-gray-500">운영시간 확인 🔗</a>
+                    <div class="font-bold text-[13px] mb-1 text-[#5B4636]">${p.place_name}</div>
+                    <div class="text-[10px] text-gray-400 mb-2 leading-tight">${p.address_name}</div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] text-mint-600 font-bold bg-mint-50 px-2 py-0.5 rounded">${p.category_name.split(' > ').pop()}</span>
+                        <a href="https://place.map.kakao.com/${p.id}" target="_blank" class="text-[9px] text-gray-400 border-b border-gray-200">상세정보/영업시간 🔗</a>
                     </div>
                 </div>
             `;
@@ -336,9 +419,9 @@
                 card.classList.add('selected');
                 mySelection.place = p.place_name;
                 mySelection.address = p.address_name;
-                const latLon = new kakao.maps.LatLng(p.y, p.x);
-                map.panTo(latLon);
-                marker.setPosition(latLon);
+                const pos = new kakao.maps.LatLng(p.y, p.x);
+                map.panTo(pos);
+                marker.setPosition(pos);
             };
             listEl.appendChild(card);
         });
@@ -346,11 +429,19 @@
 
     async function finishVote() {
         if(!mySelection.place) return alert("장소를 골라주세요!");
-        await db.collection("rooms").doc(myRoomId).update({ status: 'finished', finalPlace: mySelection.place, finalAddr: mySelection.address });
+        await db.collection("rooms").doc(myRoomId).update({ 
+            status: 'finished', 
+            finalPlace: mySelection.place, 
+            finalAddr: mySelection.address 
+        });
     }
 
-    function copyLink() { navigator.clipboard.writeText(window.location.href); alert("링크가 복사되었습니다!"); }
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href);
+        alert("링크가 복사되었습니다! 카톡방에 공유하세요.");
+    }
 
+    // 최초 로드 시 방 체크
     if(myRoomId) goToPage('profile-setup');
 </script>
 
